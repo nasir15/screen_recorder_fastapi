@@ -60,6 +60,10 @@ class FFmpegRecorder:
         screen_size: str,
         offset_x: int,
         offset_y: int,
+        video_codec: str,
+        video_preset: str,
+        video_crf: int,
+        audio_bitrate: str,
     ) -> list[str]:
         ffmpeg = self.ffmpeg_path()
         if not ffmpeg:
@@ -155,14 +159,29 @@ class FFmpegRecorder:
         else:
             raise RuntimeError(f"Unsupported OS: {platform.system()}")
 
+        codec = video_codec.strip().lower() or "libx264"
+        if codec not in {"libx264", "libx265"}:
+            raise RuntimeError("Unsupported video codec. Use libx264 or libx265.")
+
+        preset = video_preset.strip().lower() or "medium"
+        if preset not in {
+            "ultrafast", "superfast", "veryfast", "faster", "fast",
+            "medium", "slow", "slower", "veryslow",
+        }:
+            raise RuntimeError("Unsupported preset value.")
+
+        crf = max(18, min(video_crf, 35))
+
         cmd += [
-            "-c:v", "libx264",
-            "-preset", "veryfast",
+            "-c:v", codec,
+            "-preset", preset,
+            "-crf", str(crf),
             "-pix_fmt", "yuv420p",
+            "-movflags", "+faststart",
         ]
 
         if include_system_audio or include_mic:
-            cmd += ["-c:a", "aac", "-b:a", "192k"]
+            cmd += ["-c:a", "aac", "-b:a", audio_bitrate.strip() or "128k"]
 
         cmd += [str(output_path)]
         return cmd
@@ -178,6 +197,10 @@ class FFmpegRecorder:
         screen_size: str = "1920x1080",
         offset_x: int = 0,
         offset_y: int = 0,
+        video_codec: str = "libx265",
+        video_preset: str = "medium",
+        video_crf: int = 28,
+        audio_bitrate: str = "128k",
     ) -> dict:
         if self.is_recording():
             return {"ok": False, "message": "Recording is already in progress."}
@@ -197,6 +220,10 @@ class FFmpegRecorder:
                 screen_size=screen_size,
                 offset_x=offset_x,
                 offset_y=offset_y,
+                video_codec=video_codec,
+                video_preset=video_preset,
+                video_crf=video_crf,
+                audio_bitrate=audio_bitrate,
             )
             self.process = subprocess.Popen(
                 cmd,
@@ -277,6 +304,10 @@ async def start_recording(
     screen_size: str = Form("1920x1080"),
     offset_x: int = Form(0),
     offset_y: int = Form(0),
+    video_codec: str = Form("libx265"),
+    video_preset: str = Form("medium"),
+    video_crf: int = Form(28),
+    audio_bitrate: str = Form("128k"),
 ):
     result = recorder.start(
         fps=fps,
@@ -288,6 +319,10 @@ async def start_recording(
         screen_size=screen_size,
         offset_x=offset_x,
         offset_y=offset_y,
+        video_codec=video_codec,
+        video_preset=video_preset,
+        video_crf=video_crf,
+        audio_bitrate=audio_bitrate,
     )
     status_code = 200 if result["ok"] else 400
     return JSONResponse(result, status_code=status_code)

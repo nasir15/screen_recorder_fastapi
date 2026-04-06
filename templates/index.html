@@ -101,6 +101,36 @@
 
         <div class="row">
             <div class="field">
+                <label for="video_codec">Video Codec</label>
+                <select id="video_codec">
+                    <option value="libx265" selected>H.265 / HEVC (smaller file)</option>
+                    <option value="libx264">H.264 / AVC (better compatibility)</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="video_preset">Video Preset</label>
+                <select id="video_preset">
+                    <option value="fast">fast</option>
+                    <option value="medium" selected>medium</option>
+                    <option value="slow">slow</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="video_crf">Video CRF</label>
+                <input id="video_crf" type="number" value="28" min="18" max="35" />
+            </div>
+            <div class="field">
+                <label for="audio_bitrate">Audio Bitrate</label>
+                <select id="audio_bitrate">
+                    <option value="96k">96k</option>
+                    <option value="128k" selected>128k</option>
+                    <option value="192k">192k</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="field">
                 <label for="mic_device">Microphone Device</label>
                 <input id="mic_device" placeholder="Optional mic device name" />
             </div>
@@ -121,7 +151,8 @@
             <strong>Important setup notes</strong><br>
             Windows: system audio usually works best with a loopback capture device such as <code>virtual-audio-capturer</code>.<br>
             Linux: system audio usually uses PulseAudio / PipeWire monitor sources. Try <code>default</code> first, or a monitor source from <code>pactl list short sources</code>.<br>
-            macOS: true system-audio capture usually needs a loopback driver like BlackHole.
+            macOS: true system-audio capture usually needs a loopback driver like BlackHole.<br>
+            Smaller files: use <code>libx265</code> with CRF <code>28</code>. Better quality: lower CRF. Smaller size: higher CRF.
         </div>
     </div>
 
@@ -147,6 +178,10 @@
             formData.append('offset_y', document.getElementById('offset_y').value);
             formData.append('system_audio_device', document.getElementById('system_audio_device').value);
             formData.append('mic_device', document.getElementById('mic_device').value);
+            formData.append('video_codec', document.getElementById('video_codec').value);
+            formData.append('video_preset', document.getElementById('video_preset').value);
+            formData.append('video_crf', document.getElementById('video_crf').value);
+            formData.append('audio_bitrate', document.getElementById('audio_bitrate').value);
             formData.append('include_system_audio', document.getElementById('include_system_audio').checked);
             formData.append('include_mic', document.getElementById('include_mic').checked);
 

@@ -7,6 +7,7 @@ This version uses FFmpeg directly because system-audio capture is much easier th
 - Record system audio
 - Optionally mix microphone + system audio
 - Save output as MP4
+- Reduce output size with H.265/H.264 quality controls
 
 ## Run
 
@@ -85,8 +86,21 @@ ffmpeg -list_devices true -f dshow -i dummy
 - Display: `:0.0`
 - Screen Size: `1920x1080`
 - System Audio Device: `default`
+- Video Codec: `libx265`
+- Video Preset: `medium`
+- Video CRF: `28`
+- Audio Bitrate: `128k`
 
 ## Example Windows settings in the UI
 - Display / Input: leave default
 - Screen Size: `1920x1080`
 - System Audio Device: `audio=virtual-audio-capturer`
+- Video Codec: `libx264` if you need maximum playback compatibility
+
+## File-size tuning
+
+- Default optimized settings now use `libx265` with `CRF 28` and `128k` AAC audio.
+- Lower `CRF` means better quality and larger files.
+- Higher `CRF` means smaller files and lower quality.
+- `libx265` usually gives smaller files than `libx264`, but some older players handle `libx264` more reliably.
+- `medium` is a good balance. Using `slow` can shrink files a bit more, but encoding uses more CPU.
