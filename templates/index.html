@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Screen Recorder with System Audio</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 980px;
+            margin: 40px auto;
+            padding: 0 16px;
+            background: #f5f7fb;
+        }
+        .card {
+            background: white;
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        }
+        .row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .field {
+            display: flex;
+            flex-direction: column;
+            min-width: 220px;
+            flex: 1;
+        }
+        label {
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        input, select {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #cfd7e6;
+        }
+        button {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .start { background: #1f7aec; color: white; }
+        .stop { background: #e74c3c; color: white; }
+        .status, .note {
+            margin-top: 18px;
+            padding: 14px;
+            border-radius: 10px;
+            white-space: pre-wrap;
+        }
+        .status { background: #f0f5ff; }
+        .note { background: #fff8e6; }
+        code {
+            background: #eef2f7;
+            padding: 2px 6px;
+            border-radius: 6px;
+        }
+        h1 { margin-top: 0; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Screen Recorder with System Audio</h1>
+        <p>This version uses FFmpeg so it can capture the screen and, when configured correctly, system audio.</p>
+
+        <div class="row">
+            <div class="field">
+                <label for="fps">FPS</label>
+                <input id="fps" type="number" value="12" min="1" max="60" />
+            </div>
+            <div class="field">
+                <label for="screen_size">Screen Size</label>
+                <input id="screen_size" value="1920x1080" />
+            </div>
+            <div class="field">
+                <label for="display">Display / Input</label>
+                <input id="display" value=":0.0" />
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="field">
+                <label for="offset_x">Offset X</label>
+                <input id="offset_x" type="number" value="0" />
+            </div>
+            <div class="field">
+                <label for="offset_y">Offset Y</label>
+                <input id="offset_y" type="number" value="0" />
+            </div>
+            <div class="field">
+                <label for="system_audio_device">System Audio Device</label>
+                <input id="system_audio_device" placeholder="Windows: audio=virtual-audio-capturer | Linux: default / monitor source" />
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="field">
+                <label for="mic_device">Microphone Device</label>
+                <input id="mic_device" placeholder="Optional mic device name" />
+            </div>
+            <div class="field">
+                <label><input id="include_system_audio" type="checkbox" checked /> Include System Audio</label>
+                <label><input id="include_mic" type="checkbox" /> Include Microphone</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <button class="start" onclick="startRecording()">Start Recording</button>
+            <button class="stop" onclick="stopRecording()">Stop Recording</button>
+        </div>
+
+        <div class="status" id="statusBox">Loading status...</div>
+
+        <div class="note">
+            <strong>Important setup notes</strong><br>
+            Windows: system audio usually works best with a loopback capture device such as <code>virtual-audio-capturer</code>.<br>
+            Linux: system audio usually uses PulseAudio / PipeWire monitor sources. Try <code>default</code> first, or a monitor source from <code>pactl list short sources</code>.<br>
+            macOS: true system-audio capture usually needs a loopback driver like BlackHole.
+        </div>
+    </div>
+
+    <script>
+        async function refreshStatus() {
+            const res = await fetch('/api/status');
+            const data = await res.json();
+            document.getElementById('statusBox').textContent =
+                `OS: ${data.os}\n` +
+                `FFmpeg Installed: ${data.ffmpeg_installed}\n` +
+                `Recording: ${data.is_recording}\n` +
+                `Current File: ${data.current_file || '-'}\n` +
+                `Recordings Folder: ${data.recordings_dir}\n` +
+                `Local URL: ${data.local_url}`;
+        }
+
+        async function startRecording() {
+            const formData = new FormData();
+            formData.append('fps', document.getElementById('fps').value);
+            formData.append('screen_size', document.getElementById('screen_size').value);
+            formData.append('display', document.getElementById('display').value);
+            formData.append('offset_x', document.getElementById('offset_x').value);
+            formData.append('offset_y', document.getElementById('offset_y').value);
+            formData.append('system_audio_device', document.getElementById('system_audio_device').value);
+            formData.append('mic_device', document.getElementById('mic_device').value);
+            formData.append('include_system_audio', document.getElementById('include_system_audio').checked);
+            formData.append('include_mic', document.getElementById('include_mic').checked);
+
+            const res = await fetch('/api/start', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+            alert(data.message);
+            refreshStatus();
+        }
+
+        async function stopRecording() {
+            const res = await fetch('/api/stop', { method: 'POST' });
+            const data = await res.json();
+            alert(data.message + (data.path ? `\nSaved at: ${data.path}` : ''));
+            refreshStatus();
+        }
+
+        refreshStatus();
+        setInterval(refreshStatus, 2000);
+    </script>
+</body>
+</html>
